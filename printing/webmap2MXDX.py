@@ -6,6 +6,9 @@ import sys
 import subprocess
 from subprocess import PIPE
 import json
+from repairMapLayers import LayerRepairTool
+import logging
+
 
 home_dir = os.path.dirname(os.path.abspath(__file__))
 media_dir = r"C:/Users/rich/PycharmProjects/rtaa_gis/rtaa_gis/media"
@@ -38,8 +41,15 @@ class ArcProPrint:
             return project
         else:
             # repair any broken layers before copying project
-            copy_project = shutil.copy2(default_project, out_dir)
-            project = mp.ArcGISProject(copy_project)
+            lrp = LayerRepairTool(default_project)
+            # returns project with layers saved in map copied to media
+            aprx = lrp.repair(target_gdb=gdb_path)
+
+            # copy_project = shutil.copy2(default_project, out_dir)
+            aprx.saveACopy(os.path.join(out_dir, "rtaa-print.aprx"))
+            os.chdir(out_dir)
+            project = mp.ArcGISProject("rtaa-print.aprx")
+
             return project
 
     def print_page(self, page_title):
@@ -56,38 +66,69 @@ class ArcProPrint:
             except TypeError:
                 pass
         aprx.save()
+
+        # TODO-Set style and properties of the Layout
         lyt = aprx.listLayouts("Layout")[0]
         title = lyt.listElements("TEXT_ELEMENT", "TITLE")[0]
         title.text = page_title
 
         # TODO-Add Layers for each visible layer in webmap json; set opacity
-        visible_layers = []
+        visible_layers = {}
         webmap = json.loads(self.webmap)
         op_layers = webmap["operationalLayers"]
 
         for x in op_layers:
-            # title = x["title"]
-            # opacity = x["opacity"]
-            visible_layers.append(x)
+            try:
+                draw_order = op_layers.index(x)
+                title = x["title"].replace(" ", "").lower()
+                opacity = x["opacity"]
+                if title in visible_layers.keys():
+                    if type(visible_layers[title]) == "DictType":
+                        visible_layers[title]["opacity"] = opacity
+                        visible_layers[title]["draw_order"] = draw_order
+                    else:
+                        raise Exception("set layer value as Dict.")
+                else:
+                    visible_layers[title] = {}
+                    visible_layers[title]["opacity"] = opacity
+                    visible_layers[title]["draw_order"] = draw_order
+            except KeyError as e:
+                pass
 
-        # os.chdir(layer_dir)
-        # for root, dirs, files in os.walk(layer_dir):
-        #     for file in files:
-        #         if file.endswith(".lyrx"):
-        #             layer_path = os.path.join(root, file)
-        #             lf = mp.LayerFile(layer_path)
-        #             map.addLayer(lf)
+        source_layers = map.listLayers()
+        existing_layers = [x.name.replace(" ", "").lower() for x in source_layers]
+        rem_layers = [x for x in existing_layers if x not in visible_layers.keys()]
+        for lyr in rem_layers:
+            del_lyr = map.listLayers("{}".format(lyr))[0]
+            map.removeLayer(del_lyr)
 
-        # TODO-Set Basemap in aprx to match the webmap
+        add_layers = [x for x in visible_layers.keys() if x not in existing_layers]
+        for root, dirs, files in os.walk(layer_dir):
+            for file in files:
+                if file.endswith(".lyrx"):
+                    filename = file.replace(".lyrx", "").replace(" ", "").lower()
+                    if filename in add_layers:
+                        layer_path = os.path.join(root, file)
+                        lf = mp.LayerFile(layer_path)
+                        lf.opacity = visible_layers[filename]["opacity"]
+                        order = visible_layers[filename]["draw_order"]
+
+                        if order == 0:
+                            # TODO-Set Basemap in aprx to match the webmap
+                            pass
+                        else:
+                            map.addLayer(lf, order)
+
+
+
 
         # Export Layout to PDF
         aprx.save()
-
         output_pdf = os.path.join(media_dir, "{}/layout.pdf".format(self.username))
         if os.path.exists(output_pdf):
             os.remove(output_pdf)
 
-        lyt.exportToPDF(output_pdf, 300, "BEST")
+        lyt.exportToPDF(output_pdf, 300, "FASTER", layers_attributes="LAYERS_AND_ATTRIBUTES")
 
 
 if __name__ == "__main__":
