@@ -67,32 +67,34 @@ class ArcProPrint:
         self.layer_dir = layerDir
 
     def stage_project(self):
-        out_dir = os.path.join(self.media_dir, self.username)
-        if not os.path.exists(out_dir):
-            os.mkdir(out_dir)
-        os.chdir(out_dir)
-
-        project_file = []
-        for file in os.listdir(out_dir):
-            name, extension = os.path.splitext(file)
-            if extension == ".aprx":
-                project_file.append(os.path.join(out_dir, file))
-                break
-        if len(project_file):
-            project = arcpy.mp.ArcGISProject(project_file[0])
-            return project
-        else:
-            # repair any broken layers before copying project
-            lrp = LayerRepairTool(self.default_project)
-            # returns project saved with layers saved map
-            aprx = lrp.repair(target_gdb=self.gdb_path)
-
-            # copy_project = shutil.copy2(default_project, out_dir)
-            aprx.saveACopy(os.path.join(out_dir, "rtaa-print.aprx"))
+        try:
+            out_dir = os.path.join(self.media_dir, self.username)
+            if not os.path.exists(out_dir):
+                os.mkdir(out_dir)
             os.chdir(out_dir)
-            project = mp.ArcGISProject("rtaa-print.aprx")
 
-            return project
+            project_file = []
+            for file in os.listdir(out_dir):
+                name, extension = os.path.splitext(file)
+                if extension == ".aprx":
+                    project_file.append(os.path.join(out_dir, file))
+                    break
+            if len(project_file):
+                project = arcpy.mp.ArcGISProject(project_file[0])
+                return project
+            else:
+                # repair any broken layers before copying project
+                lrp = LayerRepairTool(self.default_project)
+                # returns project saved with layers saved map
+                aprx = lrp.repair(target_gdb=self.gdb_path)
+
+                # copy_project = shutil.copy2(default_project, out_dir)
+                aprx.saveACopy(os.path.join(out_dir, "rtaa-print.aprx"))
+                os.chdir(out_dir)
+                project = mp.ArcGISProject("rtaa-print.aprx")
+                return project
+        except:
+            print(sys.exc_traceback())
 
     def print_page(self, page_title):
         out_dir = os.path.join(self.media_dir, self.username)
@@ -188,7 +190,7 @@ class ArcProPrint:
                         layer_path = os.path.join(root, file)
                         lf = mp.LayerFile(layer_path)
                         lf.opacity = visible_layers[filename]["opacity"]
-                        map.addLayer(lf, "TOP")
+                        map.addLayer(lf, "BOTTOM")
 
         # Export Layout to PDF
         aprx.save()
@@ -196,8 +198,10 @@ class ArcProPrint:
         if os.path.exists(output_pdf):
             os.remove(output_pdf)
 
-        lyt.exportToPDF(output_pdf, 300, "FASTER", layers_attributes="LAYERS_AND_ATTRIBUTES")
-
+        try:
+            lyt.exportToPDF(output_pdf, 300, "FASTER", layers_attributes="LAYERS_AND_ATTRIBUTES")
+        except:
+            print(sys.exc_traceback())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -223,5 +227,8 @@ if __name__ == "__main__":
     web_map_file = os.path.join(home, 'webmap.json')
     if os.path.exists(web_map_file):
         webmap = open(web_map_file, 'r').read()
-    p = ArcProPrint(username, media_dir, webmap, gdb_path, default_project, layer_dir)
-    p.print_page(page_title)
+    try:
+        p = ArcProPrint(username, media_dir, webmap, gdb_path, default_project, layer_dir)
+        p.print_page(page_title)
+    except:
+        print(sys.exc_traceback())
