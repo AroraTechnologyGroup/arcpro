@@ -120,7 +120,6 @@ class ArcProPrint:
                 else:
                     title = x["title"].replace(" ", "").lower()
                 opacity = x["opacity"]
-                if title not in visible_layers.keys():
                 url = x["url"]
                 if title not in visible_layers.keys():
                     visible_layers[title] = {}
