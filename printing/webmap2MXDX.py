@@ -80,18 +80,19 @@ class ArcProPrint:
         for x in op_layers:
             try:
                 draw_order = op_layers.index(x)
-                title = x["title"].replace(" ", "").lower()
-                opacity = x["opacity"]
-                if title in visible_layers.keys():
-                    if type(visible_layers[title]) == "DictType":
-                        visible_layers[title]["opacity"] = opacity
-                        visible_layers[title]["draw_order"] = draw_order
-                    else:
-                        raise Exception("set layer value as Dict.")
+                if draw_order == 0:
+                    # set to basemap gallery title
+                    title = x["title"]
                 else:
+                    title = x["title"].replace(" ", "").lower()
+                opacity = x["opacity"]
+                url = x["url"]
+                if title not in visible_layers.keys():
                     visible_layers[title] = {}
-                    visible_layers[title]["opacity"] = opacity
-                    visible_layers[title]["draw_order"] = draw_order
+
+                visible_layers[title]["opacity"] = opacity
+                visible_layers[title]["draw_order"] = draw_order
+                visible_layers[title]["url"] = url
             except KeyError as e:
                 pass
 
@@ -103,6 +104,10 @@ class ArcProPrint:
             map.removeLayer(del_lyr)
 
         add_layers = [x for x in visible_layers.keys() if x not in existing_layers]
+        for x in add_layers:
+            if visible_layers[x]["draw_order"] == 0:
+                map.addDataFromPath(visible_layers[x]["url"])
+                pass
         for root, dirs, files in os.walk(layer_dir):
             for file in files:
                 if file.endswith(".lyrx"):
@@ -112,14 +117,7 @@ class ArcProPrint:
                         lf = mp.LayerFile(layer_path)
                         lf.opacity = visible_layers[filename]["opacity"]
                         order = visible_layers[filename]["draw_order"]
-
-                        if order == 0:
-                            # TODO-Set Basemap in aprx to match the webmap
-                            pass
-                        else:
-                            map.addLayer(lf, order)
-
-
+                        map.addLayer(lf, order)
 
 
         # Export Layout to PDF
