@@ -6,36 +6,65 @@ import sys
 import subprocess
 from subprocess import PIPE
 import json
-from repairMapLayers import LayerRepairTool
 import logging
 from arcpy import Extent
 import argparse
 
-home_dir = os.path.dirname(os.path.abspath(__file__))
+home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(home_dir)
+from repairMapLayers import LayerRepairTool
+
+username = "rhughes"
+
+# home pc
 media_dir = r"C:/Users/rich/PycharmProjects/rtaa_gis/rtaa_gis/media"
 if not os.path.exists(media_dir):
+    # work laptop
     media_dir = r"C:\GitHub\rtaa_gis\rtaa_gis\media"
+if not os.path.exists(media_dir):
+    # azure staging
+    media_dir = r"C:\inetpub\django_staging\rtaa_gis\rtaa_gis\media"
 
+# home pc
 gdb_path = r"G:\GIS Data\Arora\rtaa\MasterGDB_05_25_16\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
 if not os.path.exists(gdb_path):
+    # work laptop
     gdb_path = r"C:\ESRI_WORK_FOLDER\rtaa\MasterGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
+if not os.path.exists(gdb_path):
+    # azure staging
+    gdb_path = r"C:\inetpub\rtaa_gis_data\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
 
+# home pc
 default_project = r"G:\Documents\ArcGIS\Projects\RTAA_Printing\RTAA_Printing.aprx"
 if not os.path.exists(default_project):
+    # work laptop
     default_project = r"C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_Printing\RTAA_Printing.aprx"
+if not os.path.exists(default_project):
+    # azure staging
+    default_project = r"C:\inetpub\rtaa_gis_data\RTAA_Printing.aprx"
 
+# home pc
 layer_dir = r"G:\GIS Data\Arora\rtaa\layers"
 if not os.path.exists(layer_dir):
+    # work laptop
     layer_dir = r"C:\ESRI_WORK_FOLDER\rtaa\layers"
+if not os.path.exists(layer_dir):
+    # azure staging
+    layer_dir = r"C:\inetpub\rtaa_gis_data\layers"
 
+webmap_file = os.path.join(home_dir, "printing/tests/fixtures/webmap.json")
+webmap = open(webmap_file, 'r').read()
 page_title = r"RTAA Airport Authority Test Print"
 
 
 class ArcProPrint:
-    def __init__(self, username, media, webmap_as_json):
+    def __init__(self, username, media, webmap_as_json, gdbPath, defaultProject, layerDir):
         self.username = username
         self.media_dir = media
         self.webmap = json.loads(webmap_as_json)
+        self.gdb_path = gdbPath
+        self.default_project = defaultProject
+        self.layer_dir = layerDir
 
     def stage_project(self):
         out_dir = os.path.join(self.media_dir, self.username)
@@ -54,9 +83,9 @@ class ArcProPrint:
             return project
         else:
             # repair any broken layers before copying project
-            lrp = LayerRepairTool(default_project)
-            # returns project with layers saved in map copied to media
-            aprx = lrp.repair(target_gdb=gdb_path)
+            lrp = LayerRepairTool(self.default_project)
+            # returns project saved with layers saved map
+            aprx = lrp.repair(target_gdb=self.gdb_path)
 
             # copy_project = shutil.copy2(default_project, out_dir)
             aprx.saveACopy(os.path.join(out_dir, "rtaa-print.aprx"))
@@ -151,7 +180,7 @@ class ArcProPrint:
             if visible_layers[x]["draw_order"] == 0:
                 map.addDataFromPath(visible_layers[x]["url"])
                 pass
-        for root, dirs, files in os.walk(layer_dir):
+        for root, dirs, files in os.walk(self.layer_dir):
             for file in files:
                 if file.endswith(".lyrx"):
                     filename = file.replace(".lyrx", "").replace(" ", "").lower()
@@ -174,13 +203,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-username', help='the username attached to the request')
     parser.add_argument('-media', help='the file path to the django media folder')
+    parser.add_argument('-gdbPath', help="use the catalog Path to the master GDB")
+    parser.add_argument('-defaultProject', help="use the path to the parent arcpro project")
+    parser.add_argument('-layerDir', help="the parent directory storing each datasets layer files")
     args = parser.parse_args()
 
-    username = args.username
-    media_dir = args.media
+    if args.username is not None:
+        username = args.username
+    if args.media is not None:
+        media_dir = args.media
+    if args.gdbPath is not None:
+        gdb_path = args.gdbPath
+    if args.defaultProject is not None:
+        default_project = args.defaultProject
+    if args.layerDir is not None:
+        layer_dir = args.layerDir
 
     home = os.path.join(media_dir, username)
     web_map_file = os.path.join(home, 'webmap.json')
-    web_map = open(web_map_file, 'r')
-    p = ArcProPrint(username, media_dir, web_map.read())
+    if os.path.exists(web_map_file):
+        webmap = open(web_map_file, 'r').read()
+    p = ArcProPrint(username, media_dir, webmap, gdb_path, default_project, layer_dir)
     p.print_page(page_title)
