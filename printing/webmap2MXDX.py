@@ -32,15 +32,15 @@ page_title = r"RTAA Airport Authority Test Print"
 
 
 class ArcProPrint:
-    def __init__(self, username, webmap_as_json):
+    def __init__(self, username, media, webmap_as_json):
         self.username = username
+        self.media_dir = media
         self.webmap = json.loads(webmap_as_json)
 
     def stage_project(self):
-        out_dir = os.path.join(media_dir, self.username)
+        out_dir = os.path.join(self.media_dir, self.username)
         if not os.path.exists(out_dir):
-            os.chdir(media_dir)
-            os.mkdir(self.username)
+            os.mkdir(out_dir)
         os.chdir(out_dir)
 
         project_file = []
@@ -66,6 +66,7 @@ class ArcProPrint:
             return project
 
     def print_page(self, page_title):
+        out_dir = os.path.join(self.media_dir, self.username)
         aprx = self.stage_project()
         map = aprx.listMaps("Map")[0]
         broken_layers = map.listBrokenDataSources()
@@ -162,7 +163,7 @@ class ArcProPrint:
 
         # Export Layout to PDF
         aprx.save()
-        output_pdf = os.path.join(media_dir, "{}/layout.pdf".format(self.username))
+        output_pdf = "{}/layout.pdf".format(out_dir)
         if os.path.exists(output_pdf):
             os.remove(output_pdf)
 
@@ -181,5 +182,5 @@ if __name__ == "__main__":
     home = os.path.join(media_dir, username)
     web_map_file = os.path.join(home, 'webmap.json')
     web_map = open(web_map_file, 'r')
-    p = ArcProPrint(username, web_map.read())
+    p = ArcProPrint(username, media_dir, web_map.read())
     p.print_page(page_title)
