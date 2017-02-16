@@ -268,10 +268,10 @@ class ArcProPrint:
                     opacity = op_layers[formatted_name]["opacity"]
                     x.transparency = opacity * 100
                 except KeyError as e:
-                    print(e.message)
+                    print(e)
 
-                draw_order = op_layers[formatted_name]["draw_order"]
                 if x.isFeatureLayer:
+                    draw_order = op_layers[formatted_name]["draw_order"]
                     if int(draw_order) >= len(source_layers):
                         if source_layers[-1] != x:
                             mxdx.moveLayer(source_layers[-1], x, "AFTER")
