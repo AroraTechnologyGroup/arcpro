@@ -9,6 +9,7 @@ import json
 import logging
 from arcpy import Extent
 import argparse
+import traceback
 
 home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(home_dir)
@@ -94,7 +95,8 @@ class ArcProPrint:
                 project = mp.ArcGISProject("rtaa-print.aprx")
                 return project
         except:
-            print(sys.exc_traceback())
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            print(traceback.print_tb(exc_traceback))
 
     def print_page(self, page_title):
         out_dir = os.path.join(self.media_dir, self.username)
@@ -119,14 +121,28 @@ class ArcProPrint:
         # Get the extent from the web map and project the center point into State Plane
         e = map_options["extent"]
         spatial_ref = e["spatialReference"]["wkid"]
-        middle_point = arcpy.Point((e["xmax"]+e["xmin"])/2, (e["ymax"]+e["ymin"])/2)
+        middle_point = arcpy.Point((e["xmax"]+e["xmin"])/2.0, (e["ymax"]+e["ymin"])/2.0)
+        lower_left = arcpy.Point(e["xmin"], e["ymin"])
+        upper_right = arcpy.Point(e["xmax"], e["ymax"])
         old_sr = arcpy.SpatialReference(spatial_ref)
         middle_geo = arcpy.PointGeometry(middle_point, old_sr)
+        ll_geo = arcpy.PointGeometry(lower_left, old_sr)
+        ur_geo = arcpy.PointGeometry(upper_right, old_sr)
+
         new_sr = arcpy.SpatialReference(6523)
-        proj_point = middle_geo.projectAs(new_sr)
-        cam_X = proj_point.firstPoint.X
-        cam_Y = proj_point.firstPoint.Y
+        proj_mid_point = middle_geo.projectAs(new_sr)
+        proj_ll_json = ll_geo.projectAs(new_sr)
+        proj_ll_json = proj_ll_json.JSON
+        proj_ll = json.loads(proj_ll_json)
+        proj_ur_json = ur_geo.projectAs(new_sr)
+        proj_ur_json = proj_ur_json.JSON
+        proj_ur = json.loads(proj_ur_json)
+
+        new_extent = arcpy.Extent(proj_ll["x"], proj_ll["y"], proj_ur["x"], proj_ur["y"])
+        cam_X = proj_mid_point.firstPoint.X
+        cam_Y = proj_mid_point.firstPoint.Y
         scale = map_options["scale"]
+
 
         # TODO-Set Text Element properties of the Layout
         lyt = aprx.listLayouts("Layout")[0]
@@ -135,10 +151,15 @@ class ArcProPrint:
 
         # TODO-Set the Map Frame properties (including the Camera)
         map_frame = lyt.listElements("MAPFRAME_ELEMENT")[0]
+        map_frame.zoomToAllLayers()
         camera = map_frame.camera
         camera.scale = scale
-        camera.X = cam_X
-        camera.Y = cam_Y
+        camera.X = float(cam_X)
+        camera.Y = float(cam_Y)
+        # TODO-build an Extent and set to Camera
+
+        mxdx = map_frame.map
+
         aprx.save()
 
         # TODO-Add Layers for each visible layer in webmap json to the map; set opacity
@@ -168,19 +189,17 @@ class ArcProPrint:
         for x in source_layers:
             formatted_name = x.name.replace(" ", "").lower()
             existing_layers[formatted_name] = x.name
-
-        rem_layers = [x for x in existing_layers.keys() if x not in visible_layers.keys()]
-        for lyr in rem_layers:
-            try:
-                del_lyr = map.listLayers("{}".format(existing_layers[lyr]))[0]
-                map.removeLayer(del_lyr)
-            except IndexError:
-                pass
+            if formatted_name not in visible_layers.keys():
+                try:
+                    mxdx.removeLayer(x)
+                    pass
+                except IndexError:
+                    pass
 
         add_layers = [x for x in visible_layers.keys() if x not in existing_layers.keys()]
         for x in add_layers:
             if visible_layers[x]["draw_order"] == 0:
-                map.addDataFromPath(visible_layers[x]["url"])
+                map.addBasemap(x)
                 pass
         for root, dirs, files in os.walk(self.layer_dir):
             for file in files:
@@ -190,9 +209,13 @@ class ArcProPrint:
                         layer_path = os.path.join(root, file)
                         lf = mp.LayerFile(layer_path)
                         lf.opacity = visible_layers[filename]["opacity"]
-                        map.addLayer(lf, "BOTTOM")
+
+                        mxdx.addLayer(lf, "TOP")
 
         # Export Layout to PDF
+
+        # camera.setExtent(new_extent)
+        # map_frame.panToExtent(new_extent)
         aprx.save()
         output_pdf = "{}/layout.pdf".format(out_dir)
         if os.path.exists(output_pdf):
@@ -200,8 +223,12 @@ class ArcProPrint:
 
         try:
             lyt.exportToPDF(output_pdf, 300, "FASTER", layers_attributes="LAYERS_AND_ATTRIBUTES")
+            print(output_pdf)
+            return output_pdf
         except:
-            print(sys.exc_traceback())
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            print(sys.exc_traceback(exc_traceback))
+            return
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -231,4 +258,5 @@ if __name__ == "__main__":
         p = ArcProPrint(username, media_dir, webmap, gdb_path, default_project, layer_dir)
         p.print_page(page_title)
     except:
-        print(sys.exc_traceback())
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print(traceback.print_tb(exc_traceback))
