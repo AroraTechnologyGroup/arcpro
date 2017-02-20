@@ -237,7 +237,7 @@ class ArcProPrint:
         source_layers = self.reorder_layers(mxdx, visible_layers)
 
         aprx.save()
-        output_pdf = "{}/layout.pdf".format(out_dir)
+        output_pdf = "{}\\layout.pdf".format(out_dir)
         if os.path.exists(output_pdf):
             os.remove(output_pdf)
 
