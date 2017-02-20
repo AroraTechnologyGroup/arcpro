@@ -86,7 +86,7 @@ class ArcProPrint:
             else:
                 # repair any broken layers before copying project
                 lrp = LayerRepairTool(self.default_project)
-                # returns project saved with layers saved map
+                # returns project saved with layers saved in map
                 aprx = lrp.repair(target_gdb=self.gdb_path)
 
                 # copy_project = shutil.copy2(default_project, out_dir)
