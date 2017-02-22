@@ -17,7 +17,7 @@ m = p.listMaps(map)[0]
 layers = m.listLayers()
 for l in layers:
     if l.isFeatureLayer:
-        layer_name = l.name
+        layer_name = l.name.replace(" ", "_")
         i = 0
         for dirpath, dirs, files in os.walk(out_folder):
             for file in files:

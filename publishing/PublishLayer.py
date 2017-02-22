@@ -11,18 +11,18 @@ def get_folder_name(lyr):
     return folder
 
 # Test Parameters for Tool
-# p = arcpy.mp.ArcGISProject(r'C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_publishing\RTAA_publishing.aprx')
-# m = p.listMaps()[0]
-# layer = m.listLayers()[0]
-# map_or_layers = layer
+p = arcpy.mp.ArcGISProject(r'C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_publishing\RTAA_publishing.aprx')
+m = p.listMaps()[0]
+layer = m.listLayers()[0]
+map_or_layers = layer
 
-map = arcpy.GetParameterAsText(0)
-group_layer = arcpy.GetParameterAsText(1)
-layer = arcpy.GetParameterAsText(2)
+# map = arcpy.GetParameterAsText(0)
+# group_layer = arcpy.GetParameterAsText(1)
+# inlayer = arcpy.GetParameterAsText(2)
 #get layers that are sublayers or individual
-layer = layer.split("\\")[-1]
+# inlayer = arcpy.Describe(layer).name.split("\\")[-1]
 
-p = mp.ArcGISProject('current')
+# p = mp.ArcGISProject('current')
 
 # output_folder = r"C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_publishing\scratch"
 output_folder = os.path.join(os.path.dirname(p.filePath), "scratch")
@@ -32,7 +32,7 @@ m = p.listMaps("{}".format(map))[0]
 arcpy.AddMessage("Map: {}".format(m))
 
 # map_or_layers = m.listLayers("{}".format(arcpy.Describe(layer).name))[0]
-map_or_layers = m.listLayers("{}".format(layer))[0]
+# map_or_layers = m.listLayers("{}".format(layer))[0]
 
 arcpy.AddMessage("Layer: {}".format(map_or_layers.name))
 arcpy.AddMessage("CatalogPath: {}".format(arcpy.Describe(map_or_layers).catalogPath))
@@ -40,7 +40,7 @@ arcpy.AddMessage("CatalogPath: {}".format(arcpy.Describe(map_or_layers).catalogP
 out_sddraft = os.path.join(output_folder, "{}.sddraft".format(arcpy.Describe(map_or_layers).name))
 arcpy.AddMessage("out_sddraft: {}".format(out_sddraft))
 
-service_name = arcpy.Describe(map_or_layers).name.replace(" ", "_")
+service_name = arcpy.Describe(map_or_layers).name.replace("_", " ")
 arcpy.AddMessage("service_name: {}".format(service_name))
 
 server_type = "MY_HOSTED_SERVICES"

@@ -2,12 +2,12 @@ import arcpy
 from arcpy import mp
 
 """For Testing"""
-# p = mp.ArcGISProject(r"C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_publishing\RTAA_publishing.aprx")
-# map = p.listMaps('LayerMap')[0]
+p = mp.ArcGISProject(r"C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_publishing\RTAA_publishing.aprx")
+map = p.listMaps('LayerMap')[0]
 
-map = arcpy.GetParameterAsText(0)
-p = mp.ArcGISProject('current')
-map = p.listMaps(map)[0]
+# map = arcpy.GetParameterAsText(0)
+# p = mp.ArcGISProject('current')
+# map = p.listMaps(map)[0]
 
 group_layers = ['Airspace', 'Navigation Aids', 'Restriction Zones', 'Structures', 'Airfield', 'Surface Transportation',
                 'Cadastral', 'FEMA', 'Elevation']
@@ -35,7 +35,7 @@ if map_group_layers == group_layers:
             arcpy.AddMessage("{}. Group Layer: {}".format(i, group_layer))
             arcpy.AddMessage("{}. Layer Name: {}".format(i, l.name))
 
-            arcpy.PublishLayerToAGOL_RTAAPublishing(map.name, group_layer, l.name)
+            arcpy.PublishLayerToAGOL_RTAAPublishing(map.name, group_layer, l)
             i += 1
 
 else:

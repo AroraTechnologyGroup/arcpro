@@ -2,8 +2,10 @@ import os
 import arcpy
 from arcpy import env
 
-masterGDB = arcpy.GetParameterAsText(0)
-outfolder = arcpy.GetParameterAsText(1)
+# masterGDB = arcpy.GetParameterAsText(0)
+masterGDB = r"C:\ESRI_WORK_FOLDER\rtaa\MasterGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
+# outfolder = arcpy.GetParameterAsText(1)
+outfolder = r"C:\ESRI_WORK_FOLDER\rtaa\layers"
 
 env.workspace = masterGDB
 datasets = arcpy.ListDatasets()
@@ -17,17 +19,27 @@ for d in datasets:
             for row in cursor:
                 i += 1
         if i:
-            outlayer = arcpy.MakeFeatureLayer_management(fc, "{}".format(fc))
-            outpath = os.path.join(dfolder, "{}.lyrx".format(fc))
+            layer_name = fc[0]
+            for x in fc[1:]:
+                if x.isupper():
+                    layer_name += "_{}".format(x)
+                else:
+                    layer_name += x
+            if layer_name == "Easements_And_Rightsof_Way":
+                layer_name = "Easements_and_Rights_of_Way"
+
+            outlayer = arcpy.MakeFeatureLayer_management(fc, layer_name)
+            outpath = os.path.join(dfolder, "{}.lyrx".format(layer_name))
+
             if not os.path.exists(outpath):
                 arcpy.SaveToLayerFile_management(outlayer, outpath)
                 if arcpy.Exists(outpath):
-                    arcpy.AddMessage("Layer {}.lyrx was created".format(fc))
+                    arcpy.AddMessage("Layer {}.lyrx was created".format(layer_name))
                 else:
-                    arcpy.AddError("Layer {}.lyrx failed to be created".format(fc))
+                    arcpy.AddError("Layer {}.lyrx failed to be created".format(layer_name))
             else:
-                arcpy.AddWarning("Layer {}.lyrx already exists".format(fc))
+                arcpy.AddMessage("Layer {}.lyrx already exists".format(layer_name))
 
-            arcpy.Delete_management("outlayer")
+            arcpy.Delete_management(outlayer)
         else:
             arcpy.AddMessage("Feature Class {} is empty.  No layer created".format(fc))
