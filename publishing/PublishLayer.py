@@ -54,7 +54,7 @@ try:
     # arcpy.AddMessage("Layer: {}".format(lyr_name))
     arcpy.AddMessage("CatalogPath: {}".format(arcpy.Describe(map_layer).catalogPath))
 
-    out_sddraft = os.path.join(output_folder, "{}.sddraft".format(leaf_layer))
+    out_sddraft = os.path.join(output_folder, "{}.sddraft".format(leaf_layer.replace(" ", "_")))
     if os.path.exists(out_sddraft):
         os.remove(out_sddraft)
     arcpy.AddMessage("out_sddraft: {}".format(out_sddraft))
@@ -68,6 +68,7 @@ try:
     arcpy.AddMessage("service_type: {}".format(service_type))
 
     folder_name = get_folder_name(map_layer)
+    logging.info(folder_name)
     arcpy.AddMessage("folder_name: {}".format(folder_name))
 
     overwrite_existing_service = True
@@ -116,8 +117,8 @@ try:
 
     arcpy.UploadServiceDefinition_server(definition, 'My Hosted Services')
 except ExecuteError as e:
-    print(e)
-    pass
+    logger.error(e)
+    raise ExecuteError(e)
 
 
 

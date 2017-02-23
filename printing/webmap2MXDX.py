@@ -53,19 +53,23 @@ if not os.path.exists(layer_dir):
     # azure staging
     layer_dir = r"C:\inetpub\rtaa_gis_data\layers"
 
+layout_name = "8-5_11_landscape"
+map_title = "RTAA GIS Map"
+
 webmap_file = os.path.join(home_dir, "printing/tests/fixtures/webmap.json")
 webmap = open(webmap_file, 'r').read()
 page_title = r"RTAA Airport Authority Test Print"
 
 
 class ArcProPrint:
-    def __init__(self, username, media, webmap_as_json, gdbPath, defaultProject, layerDir):
+    def __init__(self, username, media, webmap_as_json, gdbPath, defaultProject, layerDir, layout):
         self.username = username
         self.media_dir = media
         self.webmap = json.loads(webmap_as_json)
         self.gdb_path = gdbPath
         self.default_project = defaultProject
         self.layer_dir = layerDir
+        self.layout = layout
 
     def stage_project(self):
         try:
@@ -81,8 +85,7 @@ class ArcProPrint:
                     project_file.append(os.path.join(out_dir, file))
                     break
             if len(project_file):
-                project = arcpy.mp.ArcGISProject(project_file[0])
-                return project
+                return project_file[0]
             else:
                 # repair any broken layers before copying project
                 lrp = LayerRepairTool(self.default_project)
@@ -91,28 +94,22 @@ class ArcProPrint:
 
                 # copy_project = shutil.copy2(default_project, out_dir)
                 aprx.saveACopy(os.path.join(out_dir, "rtaa-print.aprx"))
-                os.chdir(out_dir)
-                project = mp.ArcGISProject("rtaa-print.aprx")
-                return project
+                return os.path.join(out_dir, "rtaa-print.aprx")
+
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             print(traceback.print_tb(exc_traceback))
 
-    def print_page(self, page_title):
+    def print_page(self):
         out_dir = os.path.join(self.media_dir, self.username)
-        aprx = self.stage_project()
+        aprx_path = self.stage_project()
+        aprx = mp.ArcGISProject(aprx_path)
         map = aprx.listMaps("Map")[0]
-        broken_layers = map.listBrokenDataSources()
-        for l in broken_layers:
-            try:
-                print("connectionProperties: {}".format(l.connectionProperties))
-
-                conProp = l.connectionProperties
-                conProp['connection_info']['database'] = gdb_path
-                l.connectionProperties = conProp
-            except TypeError:
-                pass
-        aprx.save()
+        broken_layers = [x for x in map.listBrokenDataSources() if x.isFeatureLayer]
+        if len(broken_layers):
+            lrp = LayerRepairTool(aprx_path)
+            # returns project saved with layers saved in map
+            aprx = lrp.repair(target_gdb=self.gdb_path)
 
         visible_layers = {}
         op_layers = self.webmap["operationalLayers"][1:]
@@ -147,22 +144,18 @@ class ArcProPrint:
         cam_Y = proj_mid["y"]
         scale = map_options["scale"]
 
-
         # TODO-Set Text Element properties of the Layout
-        lyt = aprx.listLayouts("Layout")[0]
+        lyt = aprx.listLayouts(self.layout)[0]
         title = lyt.listElements("TEXT_ELEMENT", "TITLE")[0]
-        title.text = page_title
+        title.text = "Sample Map"
 
         # TODO-Set the Map Frame properties (including the Camera)
         map_frame = lyt.listElements("MAPFRAME_ELEMENT")[0]
-        map_frame.zoomToAllLayers()
         camera = map_frame.camera
         camera.scale = scale
         camera.X = float(cam_X)
         camera.Y = float(cam_Y)
         # TODO-build an Extent and set to Camera
-
-        mxdx = map_frame.map
 
         aprx.save()
 
@@ -190,7 +183,7 @@ class ArcProPrint:
             except KeyError as e:
                 pass
 
-        source_layers = mxdx.listLayers()
+        source_layers = map.listLayers()
         existing_layers = {}
         for x in source_layers:
             if x.isFeatureLayer:
@@ -201,7 +194,7 @@ class ArcProPrint:
             if formatted_name not in visible_layers.keys():
                 try:
                     if x.isFeatureLayer:
-                        mxdx.removeLayer(x)
+                        map.removeLayer(x)
                         pass
                     elif x.isGroupLayer:
                         pass
@@ -224,22 +217,30 @@ class ArcProPrint:
                         lf = mp.LayerFile(layer_path)
                         lf.opacity = visible_layers[filename]["opacity"]
                         draw_order = visible_layers[filename]["draw_order"]
-                        lyrs = mxdx.listLayers()
+                        lyrs = map.listLayers()
                         if draw_order >= len(lyrs):
-                            mxdx.addLayer(lf, "TOP")
+                            map.addLayer(lf, "TOP")
                         else:
-                            mxdx.insertLayer(lyrs[draw_order], lf, "BEFORE")
+                            map.insertLayer(lyrs[draw_order], lf, "BEFORE")
 
         # camera.setExtent(new_extent)
         # map_frame.panToExtent(new_extent)
 
         # Reorder Layers and set opacity
-        source_layers = self.reorder_layers(mxdx, visible_layers)
+        source_layers = self.reorder_layers(map, visible_layers)
 
         aprx.save()
-        output_pdf = "{}\\layout.pdf".format(out_dir)
-        if os.path.exists(output_pdf):
-            os.remove(output_pdf)
+
+        i = True
+        num = 1
+        os.chdir(out_dir)
+        output_pdf = "map_print.pdf"
+        while i:
+            if os.path.exists(output_pdf):
+                output_pdf = "map_print{}.pdf".format(num)
+                num += 1
+            else:
+                i = False
 
         try:
             lyt.exportToPDF(output_pdf, 300, "FASTER", layers_attributes="LAYERS_AND_ATTRIBUTES")
@@ -268,7 +269,7 @@ class ArcProPrint:
                     opacity = op_layers[formatted_name]["opacity"]
                     x.transparency = opacity * 100
                 except KeyError as e:
-                    print(e)
+                    pass
 
                 if x.isFeatureLayer:
                     draw_order = op_layers[formatted_name]["draw_order"]
@@ -296,6 +297,8 @@ if __name__ == "__main__":
     parser.add_argument('-gdbPath', help="use the catalog Path to the master GDB")
     parser.add_argument('-defaultProject', help="use the path to the parent arcpro project")
     parser.add_argument('-layerDir', help="the parent directory storing each datasets layer files")
+    parser.add_argument('-layout', help="choose the layout to print")
+
     args = parser.parse_args()
 
     if args.username is not None:
@@ -308,14 +311,16 @@ if __name__ == "__main__":
         default_project = args.defaultProject
     if args.layerDir is not None:
         layer_dir = args.layerDir
+    if args.layout is not None:
+        layout_name = args.layout
 
     home = os.path.join(media_dir, username)
     web_map_file = os.path.join(home, 'webmap.json')
     if os.path.exists(web_map_file):
         webmap = open(web_map_file, 'r').read()
     try:
-        p = ArcProPrint(username, media_dir, webmap, gdb_path, default_project, layer_dir)
-        p.print_page(page_title)
-    except:
+        p = ArcProPrint(username, media_dir, webmap, gdb_path, default_project, layer_dir, layout_name)
+        p.print_page()
+    except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         print(traceback.print_tb(exc_traceback))
