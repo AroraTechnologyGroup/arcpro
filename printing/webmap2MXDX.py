@@ -76,6 +76,9 @@ class ArcProPrint:
             out_dir = os.path.join(self.media_dir, self.username)
             if not os.path.exists(out_dir):
                 os.mkdir(out_dir)
+            out_dir = os.path.join(out_dir, 'prints')
+            if not os.path.exists(out_dir):
+                os.mkdir(out_dir)
             os.chdir(out_dir)
 
             project_file = []
@@ -102,6 +105,12 @@ class ArcProPrint:
 
     def print_page(self):
         out_dir = os.path.join(self.media_dir, self.username)
+        if not os.path.exists(out_dir):
+            os.mkdir(out_dir)
+        out_dir = os.path.join(out_dir, 'prints')
+        if not os.path.exists(out_dir):
+            os.mkdir(out_dir)
+
         aprx_path = self.stage_project()
         aprx = mp.ArcGISProject(aprx_path)
         map = aprx.listMaps("Map")[0]
@@ -253,37 +262,25 @@ class ArcProPrint:
 
     @staticmethod
     def reorder_layers(mxdx, op_layers):
-        source_layers = mxdx.listLayers()
-        for layer in source_layers:
+        all_layers = mxdx.listLayers()
+        for layer in all_layers:
             if layer.isWebLayer:
                 layer.transparency = 100
 
-        source_layers = [x for x in source_layers if not x.isWebLayer]
+        source_layers = [x for x in all_layers if x.isFeatureLayer]
         for x in source_layers:
             try:
-                if x.isFeatureLayer:
-                    formatted_name = x.name.replace(" ", "").lower()
-                else:
-                    formatted_name = x.name
+                formatted_name = x.name.replace(" ", "").lower()
+
                 try:
                     opacity = op_layers[formatted_name]["opacity"]
                     x.transparency = opacity * 100
                 except KeyError as e:
                     pass
 
-                if x.isFeatureLayer:
-                    draw_order = op_layers[formatted_name]["draw_order"]
-                    if int(draw_order) >= len(source_layers):
-                        if source_layers[-1] != x:
-                            mxdx.moveLayer(source_layers[-1], x, "AFTER")
-                        else:
-                            pass
-                    else:
-                        if source_layers[draw_order] != x:
-                            mxdx.moveLayer(source_layers[draw_order], x, "BEFORE")
-                elif x.isRasterLayer:
-                    if source_layers[0] != x:
-                        mxdx.moveLayer(source_layers[0], x, "BEFORE")
+                draw_order = op_layers[formatted_name]["draw_order"]
+                mxdx.moveLayer(all_layers[draw_order], x, "BEFORE")
+
             except IndexError:
                 pass
 
