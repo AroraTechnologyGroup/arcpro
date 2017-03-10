@@ -42,7 +42,7 @@ if not os.path.exists(default_project):
     default_project = r"C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_Printing\RTAA_Printing.aprx"
 if not os.path.exists(default_project):
     # azure staging
-    default_project = r"C:\inetpub\rtaa_gis_data\RTAA_Printing.aprx"
+    default_project = r"C:\inetpub\rtaa_gis_data\RTAA_Printing\RTAA_Printing.aprx"
 
 # home pc
 layer_dir = r"G:\GIS Data\Arora\rtaa\layers"
@@ -113,7 +113,7 @@ class ArcProPrint:
 
         aprx_path = self.stage_project()
         aprx = mp.ArcGISProject(aprx_path)
-        map = aprx.listMaps("Map")[0]
+        map = aprx.listMaps("LayerMap")[0]
         broken_layers = [x for x in map.listBrokenDataSources() if x.isFeatureLayer]
         if len(broken_layers):
             lrp = LayerRepairTool(aprx_path)
