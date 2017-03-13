@@ -9,7 +9,7 @@ class LayerRepairTool:
         self.aprx = mp.ArcGISProject(project_path)
 
     def repair(self, target_gdb):
-        m = self.aprx.listMaps('LayerMap')[0]
+        m = self.aprx.listMaps('LocalMap')[0]
         lyrs = [x for x in m.listLayers() if x.isFeatureLayer]
         for l in lyrs:
             try:
@@ -32,11 +32,18 @@ if __name__ == "__main__":
     if args.project is not None:
         project = args.project
     else:
-        project = r"C:\Users\arorateam\Documents\ArcGIS\Projects\rtaa_gis\rtaa_gis.aprx"
+        try:
+            project = r"D:\ArcPro\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx"
+        except:
+            project = arcpy.GetParameterAsText(0)
 
     if args.gdb is not None:
         gdb = args.gdb
     else:
-        gdb = r"D:\EsriGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
+        try:
+            gdb = r"D:\EsriGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
+        except:
+            gdb = arcpy.GetParameterAsText(1)
+
     rp = LayerRepairTool(project_path=project)
     rp.repair(target_gdb=gdb)
