@@ -1,0 +1,33 @@
+[
+  {
+    "FeatureClass": "RunwayHelipadDesignSurface",
+    "PublishedLayers": [
+      "BRL",
+      "OTHER",
+      "ROFA",
+      "IOFZ",
+      "POFZ",
+      "OFZ",
+      "RPZ",
+      "TOFA",
+      "TSA",
+      "TSS"
+    ]
+  },
+  {
+    "FeatureClass": "ObstructionIdSurface",
+    "PublishedLayers": [
+      "APRC77",
+      "PRIM77",
+      "TRNS77",
+      "OEIA",
+      "HORZ_77"
+    ]
+  },
+  {
+    "FeatureClass": "EasementsAndRightsofWay",
+    "PublishedLayers": [
+      "Easements and Rights of Way"
+    ]
+  }
+]

@@ -14,27 +14,27 @@ logging.basicConfig(filename=os.path.join(home_dir, 'logs/publish_layers.txt'))
 logger = logging.getLogger(__name__)
 
 
-# determine folder name from the dataset that contains the feature class to be published
+# determine MyContent folder name from the dataset that contains the feature class to be published
 def get_folder_name(lyr):
     path = arcpy.Describe(lyr).path
     folder = path.split("\\")[-1]
     return folder
 
 # Test Parameters for Tool
-p = arcpy.mp.ArcGISProject(r'D:\ArcPro\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx')
-map = 'LocalMap'
-m = p.listMaps("{}".format(map))[0]
-group_layer = 'Airspace'
-inlayer = 'PRIM77'
-map_layer = m.listLayers(inlayer)[0]
-lyr_name = map_layer.name
+# p = arcpy.mp.ArcGISProject(r'D:\ArcPro\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx')
+# map = 'LocalMap'
+# m = p.listMaps("{}".format(map))[0]
+# group_layer = 'Airspace'
+# inlayer = 'PRIM77'
+# map_layer = m.listLayers(inlayer)[0]
+# lyr_name = map_layer.name
 
 try:
-    # p = mp.ArcGISProject('current')
-    # map = arcpy.GetParameterAsText(0)
-    # group_layer = arcpy.GetParameterAsText(1)
-    # map_layer = arcpy.GetParameter(2)
-    # lyr_name = map_layer.name
+    p = mp.ArcGISProject('current')
+    map = arcpy.GetParameterAsText(0)
+    group_layer = arcpy.GetParameterAsText(1)
+    map_layer = arcpy.GetParameter(2)
+    lyr_name = map_layer.name
 
     logger.warning("lyr_name :: {}".format(lyr_name))
     m = p.listMaps("{}".format(map))[0]
@@ -119,12 +119,12 @@ try:
     try:
         arcpy.StageService_server(out_sddraft, definition)
     except Exception as e:
-        arcpy.AddError(e.message)
+        arcpy.AddError(e)
 
     try:
         arcpy.UploadServiceDefinition_server(definition, 'My Hosted Services')
     except Exception as e:
-        arcpy.AddError(e.message)
+        arcpy.AddError(e)
 
 except ExecuteError as e:
     logger.error(e)
