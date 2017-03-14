@@ -14,15 +14,15 @@ logging.basicConfig(filename=os.path.join(home_dir, 'logs/publish_layers.txt'))
 logger = logging.getLogger(__name__)
 
 
-# determine folder name from the dataset that contains the feature class to be published
+# determine MyContent folder name from the dataset that contains the feature class to be published
 def get_folder_name(lyr):
     path = arcpy.Describe(lyr).path
     folder = path.split("\\")[-1]
     return folder
 
 # Test Parameters for Tool
-# p = arcpy.mp.ArcGISProject(r'C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_publishing\RTAA_publishing.aprx')
-# map = 'LayerMap'
+# p = arcpy.mp.ArcGISProject(r'D:\ArcPro\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx')
+# map = 'LocalMap'
 # m = p.listMaps("{}".format(map))[0]
 # group_layer = 'Airspace'
 # inlayer = 'PRIM77'
@@ -45,6 +45,9 @@ try:
     arcpy.AddMessage("Map: {}".format(m))
 
     output_folder = os.path.join(os.path.dirname(p.filePath), "scratch")
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+
     env.workspace = output_folder
 
     arcpy.AddMessage("Tests : {}".format(",".join([x.name for x in m.listLayers() if x.isFeatureLayer])))
@@ -113,9 +116,16 @@ try:
     if os.path.exists(definition):
         os.remove(definition)
 
-    arcpy.StageService_server(out_sddraft, definition)
+    try:
+        arcpy.StageService_server(out_sddraft, definition)
+    except Exception as e:
+        arcpy.AddError(e)
 
-    arcpy.UploadServiceDefinition_server(definition, 'My Hosted Services')
+    try:
+        arcpy.UploadServiceDefinition_server(definition, 'My Hosted Services')
+    except Exception as e:
+        arcpy.AddError(e)
+
 except ExecuteError as e:
     logger.error(e)
     raise ExecuteError(e)
