@@ -175,11 +175,7 @@ class ArcProPrint:
             try:
                 draw_order = op_layers.index(x)
                 service_name = x["title"]
-                if draw_order == 0:
-                    # set to basemap gallery title
-                    title = x["title"]
-                else:
-                    title = x["title"].replace(" ", "").lower()
+                title = x["title"].replace(" ", "").lower()
                 opacity = x["opacity"]
                 url = x["url"]
                 if title not in visible_layers.keys():
