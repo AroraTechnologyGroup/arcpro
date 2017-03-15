@@ -23,6 +23,12 @@ if not os.path.exists(logfile):
     f.close()
 
 
+def format_name(text):
+    nm = text.replace("_", " ")
+    d = nm.replace(" ", "").lower()
+    return d
+
+
 def logger(text):
     log_file = open(logfile, 'a')
     log_file.write("{}\n".format(text))
@@ -182,7 +188,7 @@ class ArcProPrint:
         camera.Y = float(cam_Y)
         # TODO-build an Extent and set to Camera
 
-        aprx.save()
+        # aprx.save()
 
         op_layers = [x for x in op_layers if x["id"] not in ['labels', 'map_graphics']]
 
@@ -190,8 +196,8 @@ class ArcProPrint:
         for x in op_layers:
             try:
                 draw_order = op_layers.index(x)
-                service_name = x["title"]
-                title = x["title"].replace(" ", "").lower()
+                service_name = x["title"].replace("_", " ")
+                title = format_name(x["title"])
                 opacity = x["opacity"]
                 url = x["url"]
                 if title not in visible_layers.keys():
@@ -208,7 +214,7 @@ class ArcProPrint:
         existing_layers = {}
         for x in source_layers:
             if x.isFeatureLayer:
-                formatted_name = x.name.replace(" ", "").lower()
+                formatted_name = format_name(x.name)
             else:
                 formatted_name = x.name
             existing_layers[formatted_name] = x
@@ -281,7 +287,7 @@ class ArcProPrint:
         source_layers = [x for x in all_layers if x.isFeatureLayer]
         for x in source_layers:
             try:
-                formatted_name = x.name.replace(" ", "").lower()
+                formatted_name = format_name(x.name)
 
                 try:
                     opacity = op_layers[formatted_name]["opacity"]
@@ -330,5 +336,6 @@ if __name__ == "__main__":
         p = ArcProPrint(username, media_dir, webmap, gdb_path, default_project, layer_dir, layout_name)
         p.print_page()
     except Exception as e:
+        logger(e)
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logger(traceback.print_tb(exc_traceback))
