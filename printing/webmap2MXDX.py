@@ -15,6 +15,19 @@ home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(home_dir)
 from repairMapLayers import LayerRepairTool
 
+logfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs/print_log.log")
+if not os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")):
+    os.mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs"))
+if not os.path.exists(logfile):
+    f = open(logfile, 'w')
+    f.close()
+
+
+def logger(text):
+    log_file = open(logfile, 'a')
+    log_file.write("{}\n".format(text))
+    log_file.close()
+
 username = "gissetup"
 
 environ = "staging"
@@ -73,6 +86,7 @@ class ArcProPrint:
 
     def stage_project(self):
         try:
+            logger("stage_project")
             out_dir = os.path.join(self.media_dir, self.username)
             if not os.path.exists(out_dir):
                 os.mkdir(out_dir)
@@ -96,12 +110,13 @@ class ArcProPrint:
                 aprx = lrp.repair(target_gdb=self.gdb_path)
 
                 # copy_project = shutil.copy2(default_project, out_dir)
+                logger("saving copy of aprx")
                 aprx.saveACopy(os.path.join(out_dir, "rtaa-print.aprx"))
                 return os.path.join(out_dir, "rtaa-print.aprx")
 
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            print(traceback.print_tb(exc_traceback))
+            logger(traceback.print_tb(exc_traceback))
 
     def print_page(self):
         out_dir = os.path.join(self.media_dir, self.username)
@@ -121,6 +136,7 @@ class ArcProPrint:
             aprx = lrp.repair(target_gdb=self.gdb_path)
 
         visible_layers = {}
+        logger(self.webmap)
         op_layers = self.webmap["operationalLayers"][1:]
         map_options = self.webmap["mapOptions"]
 
@@ -315,4 +331,4 @@ if __name__ == "__main__":
         p.print_page()
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        print(traceback.print_tb(exc_traceback))
+        logger(traceback.print_tb(exc_traceback))
