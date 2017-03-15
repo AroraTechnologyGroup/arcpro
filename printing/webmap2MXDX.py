@@ -15,49 +15,49 @@ home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(home_dir)
 from repairMapLayers import LayerRepairTool
 
-username = "rhughes"
+username = "gissetup"
 
-# home pc
-media_dir = r"C:/Users/rich/PycharmProjects/rtaa_gis/rtaa_gis/media"
-if not os.path.exists(media_dir):
-    # work laptop
-    media_dir = r"C:\GitHub\rtaa_gis\rtaa_gis\media"
-if not os.path.exists(media_dir):
-    # azure staging
-    media_dir = r"C:\inetpub\django_staging\rtaa_gis\rtaa_gis\media"
+environ = "staging"
 
-# home pc
-gdb_path = r"G:\GIS Data\Arora\rtaa\MasterGDB_05_25_16\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
-if not os.path.exists(gdb_path):
-    # work laptop
-    gdb_path = r"C:\ESRI_WORK_FOLDER\rtaa\MasterGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
-if not os.path.exists(gdb_path):
-    # azure staging
-    gdb_path = r"C:\inetpub\rtaa_gis_data\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
 
-# home pc
-default_project = r"G:\Documents\ArcGIS\Projects\RTAA_Printing\RTAA_Printing.aprx"
-if not os.path.exists(default_project):
-    # work laptop
-    default_project = r"C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_Printing\RTAA_Printing.aprx"
-if not os.path.exists(default_project):
-    # azure staging
-    default_project = r"C:\inetpub\rtaa_gis_data\RTAA_Printing\RTAA_Printing.aprx"
+media_dir = {
+    "home": "C:/Users/rich/PycharmProjects/rtaa_gis/rtaa_gis/media",
+    "work": "C:/GitHub/rtaa_gis/rtaa_gis/media",
+    "staging": "C:/inetpub/django_staging/rtaa_gis/rtaa_gis/media",
+    "production": "C:/inetpub/django_prod/rtaa_gis/rtaa_gis/media",
+}
+media_dir = media_dir[environ]
 
-# home pc
-layer_dir = r"G:\GIS Data\Arora\rtaa\layers"
-if not os.path.exists(layer_dir):
-    # work laptop
-    layer_dir = r"C:\ESRI_WORK_FOLDER\rtaa\layers"
-if not os.path.exists(layer_dir):
-    # azure staging
-    layer_dir = r"C:\inetpub\rtaa_gis_data\layers"
+gdb_path = {
+    "home": r"G:\GIS Data\Arora\rtaa\MasterGDB_05_25_16\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb",
+    "work": r"C:\ESRI_WORK_FOLDER\rtaa\MasterGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb",
+    "staging": r"C:\inetpub\rtaa_gis_data\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb",
+    "production": r"C:\inetpub\rtaa_gis_data\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
+}
+gdb_path = gdb_path[environ]
 
-layout_name = "8-5_11_landscape"
+default_project = {
+    "home": r"G:\Documents\ArcGIS\Projects\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx",
+    "work": r"C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx",
+    "staging": r"C:\inetpub\rtaa_gis_data\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx",
+    "production": r"C:\inetpub\rtaa_gis_data\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx"
+}
+default_project = default_project[environ]
+
+layer_dir = {
+    "home": r"G:\GIS Data\Arora\rtaa\layers",
+    "work": r"C:\ESRI_WORK_FOLDER\rtaa\layers",
+    "staging": r"C:\inetpub\rtaa_gis_data\RTAA_Printing_Publishing\FeatureLayers",
+    "production": r"C:\inetpub\rtaa_gis_data\RTAA_Printing_Publishing\FeatureLayers"
+}
+layer_dir = layer_dir[environ]
+
+layout_name = "11_17_landscape"
 map_title = "RTAA GIS Map"
 
-webmap_file = os.path.join(home_dir, "printing/tests/fixtures/webmap.json")
-webmap = open(webmap_file, 'r').read()
+web_map_file = os.path.join(home_dir, "printing/tests/fixtures/webmap.json")
+webmap = open(web_map_file, 'r').read()
+
 page_title = r"RTAA Airport Authority Test Print"
 
 
@@ -113,7 +113,7 @@ class ArcProPrint:
 
         aprx_path = self.stage_project()
         aprx = mp.ArcGISProject(aprx_path)
-        map = aprx.listMaps("LayerMap")[0]
+        map = aprx.listMaps("LocalMap")[0]
         broken_layers = [x for x in map.listBrokenDataSources() if x.isFeatureLayer]
         if len(broken_layers):
             lrp = LayerRepairTool(aprx_path)
@@ -156,7 +156,7 @@ class ArcProPrint:
         # TODO-Set Text Element properties of the Layout
         lyt = aprx.listLayouts(self.layout)[0]
         title = lyt.listElements("TEXT_ELEMENT", "TITLE")[0]
-        title.text = "Sample Map"
+        title.text = "BETA - Viewer Map Print"
 
         # TODO-Set the Map Frame properties (including the Camera)
         map_frame = lyt.listElements("MAPFRAME_ELEMENT")[0]
@@ -250,7 +250,6 @@ class ArcProPrint:
         try:
             lyt.exportToPDF(output_pdf, 300, "FASTER", layers_attributes="LAYERS_AND_ATTRIBUTES")
             print(output_pdf)
-            return output_pdf
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             print(sys.exc_traceback(exc_traceback))
@@ -298,6 +297,10 @@ if __name__ == "__main__":
         username = args.username
     if args.media is not None:
         media_dir = args.media
+        home = os.path.join(media_dir, username)
+        web_map_file = os.path.join(home, 'prints/webmap.json')
+        if os.path.exists(web_map_file):
+            webmap = open(web_map_file, 'r').read()
     if args.gdbPath is not None:
         gdb_path = args.gdbPath
     if args.defaultProject is not None:
@@ -307,10 +310,6 @@ if __name__ == "__main__":
     if args.layout is not None:
         layout_name = args.layout
 
-    home = os.path.join(media_dir, username)
-    web_map_file = os.path.join(home, 'webmap.json')
-    if os.path.exists(web_map_file):
-        webmap = open(web_map_file, 'r').read()
     try:
         p = ArcProPrint(username, media_dir, webmap, gdb_path, default_project, layer_dir, layout_name)
         p.print_page()
