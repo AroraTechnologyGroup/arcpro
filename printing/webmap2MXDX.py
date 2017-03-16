@@ -106,6 +106,7 @@ class ArcProPrint:
                 name, extension = os.path.splitext(file)
                 if extension == ".aprx":
                     project_file.append(os.path.join(print_dir, file))
+                    logger("this is your project file :: {}".format(file))
                     break
             if len(project_file):
                 return project_file[0]
