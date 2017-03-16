@@ -36,7 +36,7 @@ def logger(text):
 
 username = "gissetup"
 
-environ = "staging"
+environ = "production"
 
 
 media_dir = {
@@ -100,12 +100,12 @@ class ArcProPrint:
             if not os.path.exists(out_dir):
                 os.mkdir(out_dir)
             os.chdir(out_dir)
-
+            print_dir = os.path.abspath(os.curdir)
             project_file = []
-            for file in os.listdir(out_dir):
+            for file in os.listdir(print_dir):
                 name, extension = os.path.splitext(file)
                 if extension == ".aprx":
-                    project_file.append(os.path.join(out_dir, file))
+                    project_file.append(os.path.join(print_dir, file))
                     break
             if len(project_file):
                 return project_file[0]
@@ -117,8 +117,13 @@ class ArcProPrint:
 
                 # copy_project = shutil.copy2(default_project, out_dir)
                 logger("saving copy of aprx")
-                aprx.saveACopy(os.path.join(out_dir, "rtaa-print.aprx"))
-                return os.path.join(out_dir, "rtaa-print.aprx")
+                out_name = os.path.join(print_dir, "rtaa-print.aprx")
+                aprx.saveACopy(out_name)
+                if os.path.exists(out_name):
+                    logger("successfully saved arcpo project")
+                else:
+                    logger("failed to save copy of master pro project")
+                return out_name
 
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -142,7 +147,7 @@ class ArcProPrint:
             aprx = lrp.repair(target_gdb=self.gdb_path)
 
         visible_layers = {}
-        logger(self.webmap)
+
         op_layers = self.webmap["operationalLayers"][1:]
         map_options = self.webmap["mapOptions"]
 
@@ -191,7 +196,7 @@ class ArcProPrint:
         # aprx.save()
 
         op_layers = [x for x in op_layers if x["id"] not in ['labels', 'map_graphics']]
-
+        logger("operational layers from web map :: {}".format(op_layers))
         # TODO-Add Layers for each visible layer in webmap json to the map; set opacity
         for x in op_layers:
             try:
@@ -219,6 +224,7 @@ class ArcProPrint:
                 formatted_name = x.name
             existing_layers[formatted_name] = x
             if formatted_name not in visible_layers.keys():
+                logger("this feature layer was not found in web map operational layers :: {}".format(formatted_name))
                 try:
                     if x.isFeatureLayer:
                         map.removeLayer(x)
@@ -314,7 +320,7 @@ if __name__ == "__main__":
     parser.add_argument('-layout', help="choose the layout to print")
 
     args = parser.parse_args()
-
+    logger(args)
     if args.username is not None:
         username = args.username
     if args.media is not None:
