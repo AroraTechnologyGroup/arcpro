@@ -27,7 +27,7 @@ flayers = [x for x in m.listLayers() if x.isFeatureLayer]
 for lyr in flayers:
     layer_name = lyr.name.split("\\")[-1]
     layer_file_name = layer_name.replace(" ", "_")
-    featureclass_name = layer_name.replace(" ", "")
+    featureclass_name = layer_file_name.replace("_", "")
     try:
         old_info = lyr.connectionProperties
         i = 0
