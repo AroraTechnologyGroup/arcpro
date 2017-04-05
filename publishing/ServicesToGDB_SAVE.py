@@ -87,4 +87,4 @@ for lyr in flayers:
                 "Unable to save layer file {}.  It must exist in the folder to be overwritten".format(layer_name))
 
     except Exception as e:
-        arcpy.AddError("{}".format(e))
+        arcpy.AddWarning("{}".format(e))

@@ -2,17 +2,12 @@ import arcpy
 import os
 from arcpy import mp
 
-project_path = r"D:\ArcPro\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx"
-if not os.path.exists(project_path):
-    project_path = arcpy.GetParameterAsText(0)
+project = mp.ArcGISProject("CURRENT")
 
-project = mp.ArcGISProject(project_path)
-
-layer_dir = r"D:\ArcPro\RTAA_Printing_Publishing\FeatureLayers"
-if not os.path.exists(layer_dir):
-    layer_dir = arcpy.GetParameterAsText(1)
+layer_dir = arcpy.GetParameterAsText(0)
 
 local_map = project.listMaps("LocalMap")[0]
+
 flayers = [x for x in local_map.listLayers() if x.isFeatureLayer]
 
 for lyr in flayers:
