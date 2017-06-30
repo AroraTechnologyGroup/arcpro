@@ -12,6 +12,8 @@ flayers = [x for x in local_map.listLayers() if x.isFeatureLayer]
 
 for lyr in flayers:
     name = lyr.name.split("\\")[-1]
+
+    # find the layer files
     for root, dirs, files in os.walk(layer_dir):
         for file in files:
             base = file.replace(".lyrx", "")
