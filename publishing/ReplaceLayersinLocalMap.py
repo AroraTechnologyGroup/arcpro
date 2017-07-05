@@ -6,6 +6,7 @@ from arcpy import mp
 Use this tool to replace the layers in the local map with the stored layers files
 
 1.  After layer symbology has been saved from AGOL
+2.  Run this tool from within the Pro Project
 
 """
 

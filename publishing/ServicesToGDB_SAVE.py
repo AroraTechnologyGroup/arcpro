@@ -8,7 +8,7 @@ from arcpy import env
 Use this tool to pull down feature layer symbology from AGOL
 
 1. The web map must be added to the project
-2. 
+2. Run this tool inside the Pro Project
 """
 dict_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "services_dictionary.json")
 if not os.path.exists(dict_path):
@@ -55,7 +55,8 @@ for lyr in flayers:
                 break
 
         if not i:
-            # the feature class does not have multiple layer children, use standard feature class naming
+            # the feature class was not found in the service_dictionary because it
+            # does not have multiple layer children, use standard feature class naming
             env.workspace = source_gdb
             datasets = arcpy.ListDatasets()
             for d in datasets:
@@ -66,7 +67,7 @@ for lyr in flayers:
                     i += 1
                     break
         if not i:
-            arcpy.AddWarning("no feature class was found to be the parent of layer {}".format(layer_name))
+            arcpy.AddWarning("no feature class was found to be the source of layer {}".format(layer_name))
             raise Exception()
 
         new_workspace_factory = "File Geodatabase"
@@ -79,6 +80,7 @@ for lyr in flayers:
             "connection_info": new_connection_info
         }
         lyr.updateConnectionProperties(old_info, new_info)
+
         i = 0
         for dirpath, dirs, files in os.walk(out_folder):
             for file in files:
