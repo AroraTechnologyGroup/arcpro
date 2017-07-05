@@ -2,25 +2,22 @@ import arcpy
 from arcpy import mp
 import os
 
-# Set the outfolder to be the FeatureLayer and GroupLayer directory
 feature_layer_dir = arcpy.GetParameterAsText(0)
 group_layer_dir = arcpy.GetParameterAsText(1)
+local_map = arcpy.GetParameterAsText(2)
 
 p = mp.ArcGISProject("CURRENT")
-m = p.listMaps("LocalMap")[0]
-
-# """For Testing"""
-# p = mp.ArcGISProject(r"C:\Users\rhughes\Documents\ArcGIS\Projects\RTAA_publishing\RTAA_publishing.aprx")
-# m = p.listMaps('LayerMap')[0]
+m = p.listMaps(local_map)[0]
 
 p.save()
 
 
 def save_layer(layer, out_dir):
-    layer_name = layer.name.replace(" ", "_")
     i = 0
+    layer_name = layer.name.replace(" ", "_")
     for dirpath, dirs, files in os.walk(out_dir):
         for file in files:
+            # all saved layer files have an underscore instead of spaces
             name = file.replace(".lyrx", "")
             if layer_name == name:
                 save_path = os.path.join(dirpath, file)
@@ -37,6 +34,8 @@ def save_layer(layer, out_dir):
         arcpy.AddError(
             "Unable to save layer file {}.  It must exist in the folder to be overwritten".format(layer_name))
 
+if not os.path.exists(group_layer_dir):
+    os.mkdir(group_layer_dir)
 
 layers = m.listLayers()
 for l in layers:

@@ -4,6 +4,12 @@ import os
 import json
 from arcpy import env
 
+"""
+Use this tool to pull down feature layer symbology from AGOL
+
+1. The web map must be added to the project
+2. 
+"""
 dict_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "services_dictionary.json")
 if not os.path.exists(dict_path):
     arcpy.AddWarning("No service name dictionary exists to match service layers with their feature class parent.")
@@ -14,20 +20,26 @@ layer_mappings = json.loads(services.read())
 
 out_folder = arcpy.GetParameterAsText(0)
 # out_folder = r"D:\ArcPro\RTAA_Printing_Publishing\FeatureLayers"
-map_name = arcpy.GetParameterAsText(1)
-# map_name = "ViewerMap_2_26_B"
+
+web_map = arcpy.GetParameterAsText(1)
+# web_map = "ViewerMap_2_26_B"
+
 source_gdb = arcpy.GetParameterAsText(2)
 # source_gdb = r"D:\EsriGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
+
 # """For Testing"""
 # p = mp.ArcGISProject(r"D:\ArcPro\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx")
 p = mp.ArcGISProject('current')
 p.save()
-m = p.listMaps(map_name)[0]
+m = p.listMaps(web_map)[0]
 flayers = [x for x in m.listLayers() if x.isFeatureLayer]
 for lyr in flayers:
+    # the service layer name should be formatted back to the layer file name then to the feature class name
     layer_name = lyr.name.split("\\")[-1]
     layer_file_name = layer_name.replace(" ", "_")
+    # all layer files have an underscore instead of spaces
     featureclass_name = layer_file_name.replace("_", "")
+    # all feature classes are camelCased
     try:
         old_info = lyr.connectionProperties
         i = 0
