@@ -15,7 +15,7 @@ layer_mappings = json.loads(services.read())
 out_folder = arcpy.GetParameterAsText(0)
 # out_folder = r"D:\ArcPro\RTAA_Printing_Publishing\FeatureLayers"
 map_name = arcpy.GetParameterAsText(1)
-# map_name = "ViewerMap_2_26_B"
+# map_name = "Viewer Map_2_26_B"
 source_gdb = arcpy.GetParameterAsText(2)
 # source_gdb = r"D:\EsriGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
 # """For Testing"""
@@ -48,13 +48,14 @@ for lyr in flayers:
             datasets = arcpy.ListDatasets()
             for d in datasets:
                 env.workspace = os.path.join(source_gdb, d)
-                fclist = arcpy.ListFeatureClasses("{}".format(featureclass_name))
+                fclist = arcpy.ListFeatureClasses("*.{}".format(featureclass_name))
+                arcpy.AddMessage("feature classes matching fcname {} = {}".format(featureclass_name, fclist))
                 if len(fclist):
                     new_dataset.append(fclist[0])
                     i += 1
                     break
         if not i:
-            arcpy.AddWarning("no feature class was found to be the parent of layer {}".format(layer_name))
+            arcpy.AddWarning("no feature class was found to be the parent of layer {}".format(old_info))
             raise Exception()
 
         new_workspace_factory = "File Geodatabase"
