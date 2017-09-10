@@ -2,6 +2,13 @@ import os
 import arcpy
 from arcpy import env
 
+"""
+Use this tool to build the layer files storage directories
+
+This Tool loops through the datasets in the input geodatabase, if the name of the dataset does not exist
+as a folder in the output directory, a new folder is created.
+"""
+
 masterGDB = arcpy.GetParameterAsText(0)
 outfolder = arcpy.GetParameterAsText(1)
 

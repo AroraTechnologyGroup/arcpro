@@ -9,6 +9,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from GDB_Utility import GDBReferenceObject
 
+"""
+Use this tool to pull down feature layer symbology from AGOL
+
+1. The web map must be added to the project
+2. Run this tool inside the Pro Project
+"""
 dict_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "services_dictionary.json")
 if not os.path.exists(dict_path):
     arcpy.AddWarning("No service name dictionary exists to match service layers with their feature class parent.")

@@ -2,10 +2,19 @@ import os
 import arcpy
 from arcpy import env
 
-# masterGDB = arcpy.GetParameterAsText(0)
-masterGDB = r"C:\ESRI_WORK_FOLDER\rtaa\MasterGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
-# outfolder = arcpy.GetParameterAsText(1)
-outfolder = r"C:\ESRI_WORK_FOLDER\rtaa\layers"
+"""
+Before running this tool, run the create_directories tool to build the folder structure for the geodatabase.
+
+Use this tool to create initial layer files for each feature class in the input geodatabase
+
+1.  Only if the feature class is populated with features
+2.  An existing layer is NOT overwritten
+
+"""
+masterGDB = arcpy.GetParameterAsText(0)
+# masterGDB = r"C:\ESRI_WORK_FOLDER\rtaa\MasterGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
+outfolder = arcpy.GetParameterAsText(1)
+# outfolder = r"C:\ESRI_WORK_FOLDER\rtaa\layers"
 
 env.workspace = masterGDB
 datasets = arcpy.ListDatasets()
@@ -21,10 +30,13 @@ for d in datasets:
         if i:
             layer_name = fc[0]
             for x in fc[1:]:
+                # camelCased feature class names are split using the underscore
                 if x.isupper():
                     layer_name += "_{}".format(x)
                 else:
                     layer_name += x
+            # if there are exceptions to this where feature class names are incorrectly camelCased they must be
+            # specified here
             if layer_name == "Easements_And_Rightsof_Way":
                 layer_name = "Easements_and_Rights_of_Way"
 
