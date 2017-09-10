@@ -22,6 +22,7 @@ class LayerRepairTool:
         self.aprx.save()
         return self.aprx
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-project', help='the project with layers to repair')
@@ -41,7 +42,7 @@ if __name__ == "__main__":
         gdb = args.gdb
     else:
         try:
-            gdb = r"D:\EsriGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
+            gdb = r"D:\EsriGDB\ConnectionFiles\Sub-Default_MasterGDB.sde"
         except:
             gdb = arcpy.GetParameterAsText(1)
 
