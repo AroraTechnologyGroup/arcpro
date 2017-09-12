@@ -15,8 +15,12 @@ class GDBReferenceObject:
         datasets = arcpy.ListDatasets()
         output = dict()
         for d in datasets:
-            env.workspace = os.path.join(ingdb, d)
-            fcs = arcpy.ListFeatureClasses()
+            fcs = arcpy.ListFeatureClasses("", "", d)
             output[d] = fcs
         return output
 
+
+if __name__ == "__main__":
+    GDBRef = GDBReferenceObject(path=r"D:\EsriGDB\ConnectionFiles\Sub-Default_MasterGDB.sde")
+    out = GDBRef.build_dict()
+    print(out)

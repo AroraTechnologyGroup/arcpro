@@ -1,6 +1,6 @@
 [
   {
-    "FeatureClass": "RunwayHelipadDesignSurface",
+    "FeatureClass": "RTAA_MasterGDB.DBO.RunwayHelipadDesignSurface",
     "PublishedLayers": [
       "BRL",
       "OTHER",
@@ -15,7 +15,7 @@
     ]
   },
   {
-    "FeatureClass": "ObstructionIdSurface",
+    "FeatureClass": "RTAA_MasterGDB.DBO.ObstructionIdSurface",
     "PublishedLayers": [
       "APRC77",
       "PRIM77",
@@ -25,7 +25,7 @@
     ]
   },
   {
-    "FeatureClass": "EasementsAndRightsofWay",
+    "FeatureClass": "RTAA_MasterGDB.DBO.EasementsAndRightsofWay",
     "PublishedLayers": [
       "Easements and Rights of Way"
     ]

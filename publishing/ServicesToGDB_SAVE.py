@@ -23,20 +23,26 @@ if not os.path.exists(dict_path):
 services = open(dict_path, 'r')
 layer_mappings = json.loads(services.read())
 
-# out_folder = arcpy.GetParameterAsText(0)
-out_folder = r"D:\ArcPro\RTAA_Publishing\FeatureLayers"
-# map_name = arcpy.GetParameterAsText(1)
-map_name = "Viewer Map_2_26_B"
-# source_gdb = arcpy.GetParameterAsText(2)
-source_gdb = r"D:\EsriGDB\ConnectionFiles\Sub-Default_MasterGDB.sde"
+out_folder = arcpy.GetParameterAsText(0)
+# out_folder = r"D:\ArcPro\RTAA_Publishing\FeatureLayers"
+map_name = arcpy.GetParameterAsText(1)
+# map_name = "Viewer Map_2_26_B"
+source_gdb = arcpy.GetParameterAsText(2)
+# source_gdb = r"D:\EsriGDB\ConnectionFiles\Sub-Default_MasterGDB.sde"
 gdb_dict = GDBReferenceObject(source_gdb)
 gdb_obj = gdb_dict.build_dict()
+
 # """For Testing"""
-p = mp.ArcGISProject(r"D:\ArcPro\RTAA_Publishing\RTAA_Publishing.aprx")
-# p = mp.ArcGISProject('current')
+# p = mp.ArcGISProject(r"D:\ArcPro\RTAA_Publishing\RTAA_Publishing.aprx")
+p = mp.ArcGISProject('current')
 p.save()
+
+# get the database and schema for building the feature class name
+database_name = arcpy.Describe(source_gdb).name
+
 m = p.listMaps(map_name)[0]
 flayers = [x for x in m.listLayers() if x.isFeatureLayer]
+
 for lyr in flayers:
     layer_name = lyr.name.split("\\")[-1]
     layer_file_name = layer_name.replace(" ", "_")
@@ -45,6 +51,7 @@ for lyr in flayers:
     for rec in layer_mappings:
         if layer_name in rec["PublishedLayers"]:
             featureclass_name.append(rec["FeatureClass"])
+
     if featureclass_name:
         featureclass_name = featureclass_name[0]
     else:
@@ -83,7 +90,7 @@ for lyr in flayers:
         new_workspace_factory = "SDE"
         new_connection_info = {
             'authentication_mode': 'DBMS',
-            'database': 'RTAA_MasterGDB',
+            'database': '{}'.format(database_name),
             'db_connection_properties': r'RENO-GISWEB\SQLEXPRESS',
             'dbclient': 'sqlserver',
             'instance': 'sde:sqlserver:RENO-GISWEB\\SQLEXPRESS',
@@ -100,6 +107,8 @@ for lyr in flayers:
         }
 
         lyr.updateConnectionProperties(old_info, new_info)
+        if lyr.connectionProperties["workspace_factory"] != "SDE":
+            arcpy.AddWarning("{} not set to {}".format(lyr.connectionProperties, new_info))
         print(arcpy.GetMessages())
         i = 0
         for dirpath, dirs, files in os.walk(out_folder):
