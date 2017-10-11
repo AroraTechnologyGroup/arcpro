@@ -26,9 +26,9 @@ layer_mappings = json.loads(services.read())
 out_folder = arcpy.GetParameterAsText(0)
 # out_folder = r"D:\ArcPro\RTAA_Publishing\FeatureLayers"
 map_name = arcpy.GetParameterAsText(1)
-# map_name = "Viewer Map_2_26_B"
+# map_name = "ViewerMap_2_26_B"
 source_gdb = arcpy.GetParameterAsText(2)
-# source_gdb = r"D:\EsriGDB\ConnectionFiles\Sub-Default_MasterGDB.sde"
+# source_gdb = r"D:\ArcPro\RTAA_Publishing\RENO-GISWEB.sde"
 gdb_dict = GDBReferenceObject(source_gdb)
 gdb_obj = gdb_dict.build_dict()
 
@@ -38,7 +38,8 @@ p = mp.ArcGISProject('current')
 p.save()
 
 # get the database and schema for building the feature class name
-database_name = arcpy.Describe(source_gdb).name
+prop = arcpy.Describe(source_gdb).connectionProperties
+database_name = prop.database
 
 m = p.listMaps(map_name)[0]
 flayers = [x for x in m.listLayers() if x.isFeatureLayer]
@@ -106,7 +107,11 @@ for lyr in flayers:
             "connection_info": new_connection_info
         }
 
-        lyr.updateConnectionProperties(old_info, new_info)
+        try:
+            lyr.updateConnectionProperties(old_info, new_info)
+        except Exception as e:
+            print(e)
+
         if lyr.connectionProperties["workspace_factory"] != "SDE":
             arcpy.AddWarning("{} not set to {}".format(lyr.connectionProperties, new_info))
         print(arcpy.GetMessages())

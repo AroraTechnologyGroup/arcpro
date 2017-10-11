@@ -21,6 +21,6 @@ class GDBReferenceObject:
 
 
 if __name__ == "__main__":
-    GDBRef = GDBReferenceObject(path=r"D:\EsriGDB\ConnectionFiles\Sub-Default_MasterGDB.sde")
+    GDBRef = GDBReferenceObject(path=r"D:\ConnectionFiles\OSAuth@RTAA_MasterGDB.sde")
     out = GDBRef.build_dict()
     print(out)
