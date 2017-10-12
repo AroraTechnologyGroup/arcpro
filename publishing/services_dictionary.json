@@ -29,5 +29,19 @@
     "PublishedLayers": [
       "Easements and Rights of Way"
     ]
+  },
+  {
+    "FeatureClass": "RTAA_MasterGDB.DBO.LeaseSpace",
+    "PublishedLayers": [
+      "GA-East",
+      "GA-East Box Hangars",
+      "GA-East Tie Downs",
+      "GA-West",
+      "GA-West Box Hangars",
+      "Land Leases",
+      "Mini-Warehouse",
+      "Level1 Leases",
+      "Level2 Leases"
+    ]
   }
 ]
