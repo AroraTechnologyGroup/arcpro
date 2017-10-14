@@ -14,7 +14,7 @@ logging.basicConfig(filename=os.path.join(home_dir, 'logs/publish_layers.txt'))
 logger = logging.getLogger(__name__)
 
 
-# determine MyContent folder name from the dataset that contains the feature class to be published
+# determine MyContent folder name from the group layer that contains the feature class to be published
 def get_folder_name(lyr):
     path = arcpy.Describe(lyr).path
     folder = path.split("\\")[-1]
