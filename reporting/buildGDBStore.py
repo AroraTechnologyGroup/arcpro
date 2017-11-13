@@ -3,6 +3,8 @@ from arcpy import env
 import json
 import os
 from collections import Counter
+import argparse
+import sys
 
 
 class DescribeGDB:
@@ -167,26 +169,64 @@ class DescribeField:
 
 
 if __name__ == "__main__":
-    gdb = r"C:\ESRI_WORK_FOLDER\rtaa\MasterGDB\MasterGDB_07_27_17.gdb"
-    x = DescribeGDB(gdb)
-    gdb_output = x.describe()
-    print(gdb_output)
+    """
+    1. If the gdb is provided and no other parameters, then the entire model will be built
+    2. If the dataset is provided, then only that dataset will be analyzed
+    3. If the feature class is provided, then only that feature class will be analyzed
+    4. If the field is provided, the only that field will be analyzed
+    
+    * the gdb must be provided
+    """
 
-    datasets = json.loads(gdb_output)["datasets"]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-gdb', help='this is the path to the geodatabase')
+    parser.add_argument('-dataset', help='this is the dataset to analyze')
+    parser.add_argument('-featureclass', help='this is a single feature class to analyze')
+    parser.add_argument('-field', help='this is a single field to analyze')
+    args = parser.parse_args()
+
+    gdb = args.gdb
+    if args.dataset is not None:
+        dataset = args.dataset
+    if args.featureclass is not None:
+        featureClass = args.featureClass
+    if args.field is not None:
+        field = args.field
+
+    x = DescribeGDB(gdb)
+
+    gdb_output = x.describe()
+
+    sys.stdout.buffer.write(gdb_output)
+
+    if dataset:
+        "We are only processing this one dataset"
+        datasets = [dataset]
+    else:
+        datasets = json.loads(gdb_output)["datasets"]
+
     for dataset in datasets:
         desc_dataset = DescribeFDataset(gdb, dataset)
         dset_output = desc_dataset.describe()
-        print(dset_output)
+        sys.stdout.buffer.write(dset_output)
 
-        fclist = json.loads(dset_output)["children"]
+        if featureClass:
+            fclist = [featureClass]
+        else:
+            fclist = json.loads(dset_output)["children"]
+
         for fc in fclist:
             obj = DescribeFClass(gdb, dataset, fc)
             fc_out = obj.describe()
-            print(fc_out)
+            sys.stdout.buffer.write(fc_out)
 
-            fields = [f.name for f in arcpy.ListFields(fc)]
+            if field:
+                fields = [field]
+            else:
+                fields = [f.name for f in arcpy.ListFields(fc)]
+
             for field in fields:
                 f_obj = DescribeField(gdb, dataset, fc, field)
                 f_out = f_obj.describe()
-                print(f_out)
+                sys.stdout.buffer.write(f_out)
 
