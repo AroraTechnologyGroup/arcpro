@@ -9,14 +9,17 @@ Use this tool to replace the layers in the local map with the stored layers file
 2.  Run this tool from within the Pro Project
 
 """
-
+# """For Testing"""
+# project = mp.ArcGISProject(r"D:\ArcPro\RTAA_Publishing\RTAA_Publishing.aprx")
 project = mp.ArcGISProject("CURRENT")
 
 layer_dir = arcpy.GetParameterAsText(0)
+# layer_dir = r"D:\ArcPro\RTAA_Publishing\FeatureLayers"
 
-local_map = arcpy.GetParameterAsText(1)
+local_map_name = arcpy.GetParameterAsText(1)
+# local_map_name = "Viewer_Local"
 
-local_map = project.listMaps(local_map)[0]
+local_map = project.listMaps("{}".format(local_map_name))[0]
 
 flayers = [x for x in local_map.listLayers() if x.isFeatureLayer]
 # get the names for each feature layer in the local map
@@ -26,12 +29,10 @@ for lyr in flayers:
     for root, dirs, files in os.walk(layer_dir):
         for file in files:
             base = file.replace(".lyrx", "")
-            # no layers in the map have underscores
             base = base.replace("_", " ")
-            # map layer name equals layer files name (after formatting)
-            if name == base:
+            # if filename after removing the file extension and switching a space for an underscore equals the layername
+            if name.lower() == base.lower():
                 if file.endswith(".lyrx"):
-                    # creating layer file from saved layer
                     layer_file = mp.LayerFile(os.path.join(root, file))
                     local_map.insertLayer(lyr, layer_file, 'AFTER')
                     local_map.removeLayer(lyr)

@@ -3,6 +3,11 @@ from arcpy import mp
 import os
 import json
 from arcpy import env
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from GDB_Utility import GDBReferenceObject
 
 """
 Use this tool to pull down feature layer symbology from AGOL
@@ -19,27 +24,40 @@ services = open(dict_path, 'r')
 layer_mappings = json.loads(services.read())
 
 out_folder = arcpy.GetParameterAsText(0)
-# out_folder = r"D:\ArcPro\RTAA_Printing_Publishing\FeatureLayers"
-
-web_map = arcpy.GetParameterAsText(1)
-# web_map = "ViewerMap_2_26_B"
-
+# out_folder = r"D:\ArcPro\RTAA_Publishing\FeatureLayers"
+map_name = arcpy.GetParameterAsText(1)
+# map_name = "ViewerMap_2_26_B"
 source_gdb = arcpy.GetParameterAsText(2)
-# source_gdb = r"D:\EsriGDB\MasterGDB_05_25_16\MasterGDB_05_25_16.gdb"
+# source_gdb = r"D:\ArcPro\RTAA_Publishing\RENO-GISWEB.sde"
+gdb_dict = GDBReferenceObject(source_gdb)
+gdb_obj = gdb_dict.build_dict()
 
 # """For Testing"""
-# p = mp.ArcGISProject(r"D:\ArcPro\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx")
+# p = mp.ArcGISProject(r"D:\ArcPro\RTAA_Publishing\RTAA_Publishing.aprx")
 p = mp.ArcGISProject('current')
 p.save()
-m = p.listMaps(web_map)[0]
+
+# get the database and schema for building the feature class name
+prop = arcpy.Describe(source_gdb).connectionProperties
+database_name = prop.database
+
+m = p.listMaps(map_name)[0]
 flayers = [x for x in m.listLayers() if x.isFeatureLayer]
+
 for lyr in flayers:
-    # the service layer name should be formatted back to the layer file name then to the feature class name
     layer_name = lyr.name.split("\\")[-1]
     layer_file_name = layer_name.replace(" ", "_")
-    # all layer files have an underscore instead of spaces
-    featureclass_name = layer_file_name.replace("_", "")
-    # all feature classes are camelCased
+    # look up the feature class name from the services_dictionary using the layer_name
+    featureclass_name = []
+    for rec in layer_mappings:
+        if layer_name in rec["PublishedLayers"]:
+            featureclass_name.append(rec["FeatureClass"])
+
+    if featureclass_name:
+        featureclass_name = featureclass_name[0]
+    else:
+        featureclass_name = layer_file_name.replace("_", "")
+
     try:
         old_info = lyr.connectionProperties
         i = 0
@@ -55,32 +73,48 @@ for lyr in flayers:
                 break
 
         if not i:
-            # the feature class was not found in the service_dictionary because it
-            # does not have multiple layer children, use standard feature class naming
+            # the feature class does not have multiple layer children so the services
+            # dictionary is not needed, use standard feature class naming
             env.workspace = source_gdb
-            datasets = arcpy.ListDatasets()
-            for d in datasets:
-                env.workspace = os.path.join(source_gdb, d)
-                fclist = arcpy.ListFeatureClasses("{}".format(featureclass_name))
-                if len(fclist):
-                    new_dataset.append(fclist[0])
+
+            for k, v in gdb_obj.items():
+                base_names = [x.split(".")[-1] for x in v]
+                if featureclass_name in base_names:
+                    fcname = v[base_names.index(featureclass_name)]
+                    new_dataset.append(fcname)
                     i += 1
                     break
-        if not i:
-            arcpy.AddWarning("no feature class was found to be the source of layer {}".format(layer_name))
-            raise Exception()
 
-        new_workspace_factory = "File Geodatabase"
+        if not i:
+            raise Exception("no feature class was found to be the parent of layer {}\n".format(old_info))
+
+        new_workspace_factory = "SDE"
         new_connection_info = {
-            "database": source_gdb
+            'authentication_mode': 'DBMS',
+            'database': '{}'.format(database_name),
+            'db_connection_properties': r'RENO-GISWEB\SQLEXPRESS',
+            'dbclient': 'sqlserver',
+            'instance': 'sde:sqlserver:RENO-GISWEB\\SQLEXPRESS',
+            'password': 'GIS@RTAA123!',
+            'server': 'RENO-GISWEB',
+            'user': 'GIS_Reader',
+            'version': 'dbo.DEFAULT'
         }
+
         new_info = {
             "dataset": new_dataset[0],
             "workspace_factory": new_workspace_factory,
             "connection_info": new_connection_info
         }
-        lyr.updateConnectionProperties(old_info, new_info)
 
+        try:
+            lyr.updateConnectionProperties(old_info, new_info)
+        except Exception as e:
+            print(e)
+
+        if lyr.connectionProperties["workspace_factory"] != "SDE":
+            arcpy.AddWarning("{} not set to {}".format(lyr.connectionProperties, new_info))
+        print(arcpy.GetMessages())
         i = 0
         for dirpath, dirs, files in os.walk(out_folder):
             for file in files:

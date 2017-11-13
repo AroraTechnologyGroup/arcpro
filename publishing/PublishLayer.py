@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 def get_folder_name(lyr):
     path = arcpy.Describe(lyr).path
     folder = path.split("\\")[-1]
+    layer_name = arcpy.Describe(lyr).nameString
+    arcpy.AddMessage("layer_name :: {}".format(layer_name))
+    if folder == "RTAA_MasterGDB.DBO.Interior" and layer_name.rfind("LeaseSpace"):
+        folder = "Lease_Spaces"
     return folder
 
 # Test Parameters for Tool
