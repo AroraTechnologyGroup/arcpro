@@ -13,17 +13,6 @@ if not os.path.exists(os.path.join(home_dir, 'logs')):
 logging.basicConfig(filename=os.path.join(home_dir, 'logs/publish_layers.txt'))
 logger = logging.getLogger(__name__)
 
-
-# determine MyContent folder name from the group layer that contains the feature class to be published
-def get_folder_name(lyr):
-    path = arcpy.Describe(lyr).path
-    folder = path.split("\\")[-1]
-    layer_name = arcpy.Describe(lyr).nameString
-    arcpy.AddMessage("layer_name :: {}".format(layer_name))
-    if folder == "RTAA_MasterGDB.DBO.Interior" and layer_name.rfind("LeaseSpace"):
-        folder = "Lease_Spaces"
-    return folder
-
 # Test Parameters for Tool
 # p = arcpy.mp.ArcGISProject(r'D:\ArcPro\RTAA_Printing_Publishing\RTAA_Printing_Publishing.aprx')
 # map = 'LocalMap'
@@ -38,9 +27,11 @@ try:
     map = arcpy.GetParameterAsText(0)
     group_layer = arcpy.GetParameterAsText(1)
     map_layer = arcpy.GetParameter(2)
+    folder_name = arcpy.GetParameterAsText(3)
+
     lyr_name = map_layer.name
 
-    logger.warning("lyr_name :: {}".format(lyr_name))
+    logger.info("lyr_name :: {}".format(lyr_name))
     m = p.listMaps("{}".format(map))[0]
 
     leaf_layer = lyr_name.split("\\")[-1]
@@ -74,8 +65,6 @@ try:
     service_type = "FEATURE_ACCESS"
     arcpy.AddMessage("service_type: {}".format(service_type))
 
-    folder_name = get_folder_name(map_layer)
-    logging.info(folder_name)
     arcpy.AddMessage("folder_name: {}".format(folder_name))
 
     overwrite_existing_service = True
@@ -102,10 +91,10 @@ try:
     description = group_layer
     arcpy.AddMessage("description: {}".format(description))
 
-    credits = "RTAA"
+    credits = "MSP"
     arcpy.AddMessage("credits: {}".format(credits))
 
-    use_limitations = "RTAA"
+    use_limitations = "MSP"
     arcpy.AddMessage("use_limitations: {}".format(use_limitations))
 
     p.save()
@@ -127,6 +116,7 @@ try:
 
     try:
         arcpy.UploadServiceDefinition_server(definition, 'My Hosted Services')
+        # TODO -Update the sharing on the service to put it in the Published Layers Group
     except Exception as e:
         arcpy.AddError(e)
 

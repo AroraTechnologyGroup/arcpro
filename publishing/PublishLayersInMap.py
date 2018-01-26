@@ -12,8 +12,9 @@ map = arcpy.GetParameterAsText(0)
 p = mp.ArcGISProject('current')
 map = p.listMaps(map)[0]
 layers = map.listLayers()
-layers = arcpy.GetParameter(1)
-layers = layers.exportToString().split(";")
+layers = [l.name for l in layers]
+# layers = arcpy.GetParameter(1)
+# layers = layers.exportToString().split(";")
 arcpy.AddMessage("layers :: {}".format(layers))
 
 toolbox_path = p.defaultToolbox
