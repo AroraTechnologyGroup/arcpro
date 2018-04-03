@@ -5,6 +5,8 @@ from arcpy import mp, env
 from arcgisscripting import ExecuteError
 import logging
 
+env.preserveGlobalIds = True
+
 home_dir = os.path.dirname(os.path.abspath(__file__))
 
 if not os.path.exists(os.path.join(home_dir, 'logs')):
@@ -42,6 +44,11 @@ try:
     output_folder = os.path.join(os.path.dirname(p.filePath), "scratch")
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
+
+    staging_gdb = p.defaultGeodatabase
+
+    # Copy the dataSource from the enterpriseGDB to the project default GDB with the preserveGlobalIds env setting True
+    # Add a new text field named src_GlobalID and populate that field with the Global ID for each feature
 
     env.workspace = output_folder
 
@@ -98,6 +105,7 @@ try:
     arcpy.AddMessage("use_limitations: {}".format(use_limitations))
 
     p.save()
+
     mp.CreateWebLayerSDDraft(map_or_layers=map_layer, out_sddraft=out_sddraft, service_name=leaf_layer,
                              server_type=server_type, service_type=service_type, folder_name=folder_name,
                              overwrite_existing_service=overwrite_existing_service, copy_data_to_server=copy_data_to_server,
