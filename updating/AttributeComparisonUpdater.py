@@ -2,23 +2,49 @@ import arcpy
 from arcpy import mp
 from arcpy import da
 
-# web_fc = arcpy.GetParameterAsText(0)
-web_fc = r"C:\ESRI_WORK_FOLDER\rtaa\spaces\Space_8_29_18\c222b57d726042bbabfc0d4a2242d5ef.gdb\Space"
+#########################################################################################################
+## The purpose of this script is to bring attribute changes made in AGOL back down into the Master GDB ##
+#########################################################################################################
 
-# target_fc = arcpy.GetParameterAsText(1)
-target_fc = r"E:\DatabaseConnections\RTAA\RTAA_Master_Replica.sde\RTAA_MasterGDB.DBO.Interior\RTAA_MasterGDB.DBO.Space"
+web_fc = arcpy.GetParameterAsText(0)
+# web_fc = r"C:\ESRI_WORK_FOLDER\rtaa\spaces\Space_8_29_18\c222b57d726042bbabfc0d4a2242d5ef.gdb\Space"
+
+target_fc = arcpy.GetParameterAsText(1)
+# target_fc = r"E:\DatabaseConnections\RTAA\RTAA_Master_Replica.sde\RTAA_MasterGDB.DBO.Interior\RTAA_MasterGDB.DBO.Space"
 
 
-def get_root_name(fc):
+target_workspace = "\\".join(arcpy.Describe(target_fc).path.split("\\")[:-1])
+if not arcpy.Exists(target_workspace):
+    message = "Unable to locate the target workspace {}".format(target_workspace)
+    arcpy.AddError(message)
+    raise Exception(message)
+
+else:
+    arcpy.AddMessage("About to Edit the Target Workspace {}".format(target_workspace))
+
+editor = arcpy.da.Editor(target_workspace)
+editor.startEditing()
+
+
+def get_web_service_name(fc):
     """return the final portion of the feature class name"""
+    path = arcpy.Describe(fc).path
+    name = path.split("/")[-2]
+    return name
+
+
+def get_feature_class_name(fc):
+    """return the final portion of the feature class name removing the enterprise database portion"""
     base_name = arcpy.Describe(fc).baseName
     x = base_name.split(".")[-1]
     return x
 
 
+web_name = get_web_service_name(web_fc)
+target_name = get_feature_class_name(target_fc)
 # the rule is that the input fc name must match the target fc name
-if get_root_name(web_fc) != get_root_name(target_fc):
-    message = "source fc name does not match the target fc name"
+if web_name != target_name:
+    message = "web fc name {} does not match the target fc name {}".format(web_name, target_name)
     arcpy.AddError(message)
     raise Exception(message)
 
@@ -57,17 +83,21 @@ web_fields.sort()
 target_fields.sort()
 
 if web_fields != target_fields:
-    arcpy.AddError("These fields were found in the web fc but not in the target fc: {}".format([x for x in web_fields if x not in target_fields]))
-    arcpy.AddError("These fields were found in the target fc but not in the web fc: {}".format(
+    arcpy.AddMessage("* These fields were found in the web fc but not in the target fc: {}".format([x for x in web_fields if x not in target_fields]))
+    arcpy.AddMessage("* These fields were found in the target fc but not in the web fc: {}".format(
         [x for x in target_fields if x not in web_fields]))
 
 common_fields = [x for x in web_fields if x in target_fields]
 
-arcpy.AddMessage("These are the common fields being compared between the feature classes :: {}".format(common_fields))
 # iterating through all of the target features and updating their attributes from the web fc
-
 update_cnt = 0
-with da.UpdateCursor(target_fc, ["GlobalID"].extend(common_fields)) as cursor:
+
+target_fields = ["GlobalID"]
+target_fields.extend(common_fields)
+
+arcpy.AddMessage("* These common fields will be updated {}\n".format(common_fields))
+editor.startOperation()
+with da.UpdateCursor(target_fc, target_fields) as cursor:
     for row in cursor:
         guid = row[0]
         atts = row[1:]
@@ -81,11 +111,16 @@ with da.UpdateCursor(target_fc, ["GlobalID"].extend(common_fields)) as cursor:
                     needs_update = True
                     break
             if needs_update:
+                arcpy.AddMessage("Row: {} is being updated with Row: {}".format(atts, _row))
                 new_row = _row
         # check if the new_row has been updated, if so update target_row
         if new_row != row:
-            cursor.updateRow(new_row)
+            output = [guid]
+            output.extend(new_row)
+            cursor.updateRow(output)
             update_cnt += 1
 
+editor.stopOperation()
+editor.stopEditing(False)
 arcpy.AddMessage("{} rows were updated".format(update_cnt))
 
